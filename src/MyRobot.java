@@ -39,7 +39,6 @@ public class MyRobot extends Agent {
         this.performFollow = false;
         this.performOrientation = true;
         this.performForward = false;
-        System.out.println(this.lc.getLux());
     }
 
     public void performBehavior() {
@@ -50,18 +49,8 @@ public class MyRobot extends Agent {
             this.performStop = true;
         }
 
-        int min = 0;
+        int min = this.getSonarWithMinimumMeasurement();
 
-        for(int i = 1; i < this.sonars.getNumSensors(); ++i) {
-            if (this.sonars.getMeasurement(i) < this.sonars.getMeasurement(min)) {
-                min = i;
-            }
-        }
-
-        double maxThreshold = 1.0E-4;
-        double minThreshold = 1.0E-6;
-        this.lightThreshold = minThreshold + (c - this.minLux) / this.maxLux * (maxThreshold - minThreshold);
-        this.lightThreshold = c / 150.0;
         if (!this.performFollow && !this.performOrientation) {
             if (this.sonars.getMeasurement(min) < 1.0) {
                 this.performFollow = true;
@@ -90,7 +79,7 @@ public class MyRobot extends Agent {
             }
         }
 
-        if (this.performOrientation && Math.abs(l - r) < this.lightThreshold && c < l && c < r) {
+        if (this.performOrientation && this.oriented(c, r, l)) {
             this.performOrientation = false;
             this.previous_values[0] = 0.0;
             this.previous_values[1] = 0.0;
@@ -112,6 +101,13 @@ public class MyRobot extends Agent {
 
     }
 
+    /**
+     * Μετακινεί όλες τις προηγούμενες ενδείξεις του αισθητήρα c, οι οποίες είναι
+     * αποθηκευμένες στον πίνακα previous_values κατά μία θέση προς τα αριστέρα.
+     * Στην ουσία 'πετάει' την πιο παλιά ένδειξη, και συμπεριλαμβάνει την τελευταία ένδειξη
+     * του c, η οποία εισάγεται στο τέλος του πίνακα.
+     * @param c Η τελευταία (πιο πρόσφατη) ένδειξη του αισθητήρα στο κέντρο του ρομπότ
+     */
     private void shift(double c) {
         int i;
         for(i = 0; i < this.previous_values.length - 1; ++i) {
@@ -121,6 +117,14 @@ public class MyRobot extends Agent {
         this.previous_values[i] = c;
     }
 
+    /**
+     * Ελέγχει εάν το ρομπότ έχει προσεγγίσει σημείο στο οποίο παρατηρείται
+     * τοπικό μέγιστο στην τιμή του κεντρικού αισθητήρα (c). Ουσιαστικά ελέγχουμε
+     * αν η τιμή στη μέση του πίνακα previous_values, δηλαδή η (k+1)-οστή τιμή
+     * είναι η μεγαλύτερη τιμή από όλες τις άλλες k τιμές στα αριστερά (παλιότερες)
+     * και τις k τιμές στα δεξιά (πρόσφατες).
+     * @return true/false Ανάλογα με το αν προσεγγίστηκε τοπικό μέγιστο (πριν k frames)
+     */
     private boolean foundLocalMax() {
         int middleIndex = (this.previous_values.length - 1) / 2;
         boolean isLocalMax = true;
@@ -138,5 +142,38 @@ public class MyRobot extends Agent {
         }
 
         return isLocalMax;
+    }
+
+
+    /**
+     * Ελέγχει αν το ρομπότ έχει ευθυγραμμιστεί με την λάμπα φωτός. Αυτό συμβαίνει
+     * όταν η διαφορά των πλαϊνών αισθητήρων είναι αρκετά μικρή, και όταν το ρομπότ
+     * κοιτάει πρός την κατεύθυνση της λάμπας, άρα η ένδειξη του κεντρικού αισθητήρα
+     * είναι μικρότερη των άλλων δύο.
+     * @param c Η ένδειξη του κεντρικού αισθητήρα
+     * @param r Η ένδειξη του δεξιού αισθητήρα
+     * @param l Η ένδειξη του αριστερού αισθητήρα
+     * @return true/false ανάλογα με το αν το ρομπότ ευθυγραμμίστηκε
+     */
+    private boolean oriented(double c, double r, double l) {
+        this.lightThreshold = c / 150.0;
+
+        return Math.abs(l - r) < this.lightThreshold && c < l && c < r;
+    }
+
+    /**
+     * Βρίσκει και επιστρέφει τον αριθμό του αισθητήρα ο οποίος δείχνει
+     * την μικρότερη μέτρηση απόστασης από εμπόδιο.
+     */
+    private int getSonarWithMinimumMeasurement() {
+        int min = 0;
+
+        for(int i = 1; i < this.sonars.getNumSensors(); ++i) {
+            if (this.sonars.getMeasurement(i) < this.sonars.getMeasurement(min)) {
+                min = i;
+            }
+        }
+
+        return min;
     }
 }
