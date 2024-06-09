@@ -13,25 +13,29 @@ public class MyRobot extends Agent {
     public LightSensor ll = RobotFactory.addLightSensorLeft(this);
     public LightSensor lr = RobotFactory.addLightSensorRight(this);
     public LightSensor lc = RobotFactory.addLightSensor(this);
+
     public RangeSensorBelt sonars;
+
     public boolean performStop;
     public boolean performFollow;
     public boolean performOrientation;
     public boolean performForward;
+
     private boolean CLOCKWISE = false;
+
     private int effectiveCounter = 0;
     private boolean oriented = false;
     public double lightThreshold;
     private double maxLux = 0.077;
-    private double minLux = 0.0012;
-    private int num_of_sonars = 360;
+
+
+    private int num_of_sonars = 24;
     private double[] previous_values = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     private int stepCounter = 0;
 
     public MyRobot(Vector3d position, String name) {
         super(position, name);
         this.sonars = RobotFactory.addSonarBeltSensor(this, this.num_of_sonars);
-        System.out.println(this.foundLocalMax());
     }
 
     public void initBehavior() {
@@ -53,11 +57,9 @@ public class MyRobot extends Agent {
 
         if (!this.performFollow && !this.performOrientation) {
             if (this.sonars.getMeasurement(min) < 1.0) {
-                this.performFollow = true;
-            }
-
-            if (min > 45 && min < 315) {
-                this.performFollow = false;
+                if (this.frontAreaIsClear() == false) {
+                    this.performFollow = true;
+                }
             }
         }
 
@@ -79,7 +81,7 @@ public class MyRobot extends Agent {
             }
         }
 
-        if (this.performOrientation && this.oriented(c, r, l)) {
+        if (this.performOrientation && this.isOriented(c, r, l)) {
             this.performOrientation = false;
             this.previous_values[0] = 0.0;
             this.previous_values[1] = 0.0;
@@ -95,11 +97,12 @@ public class MyRobot extends Agent {
         } else if (this.performFollow) {
             SimpleBehaviors.follow(this, this.CLOCKWISE);
         } else if (this.performForward) {
-            System.out.println(c);
             SimpleBehaviors.forward(this);
         }
-
     }
+
+
+
 
     /**
      * Μετακινεί όλες τις προηγούμενες ενδείξεις του αισθητήρα c, οι οποίες είναι
@@ -129,16 +132,18 @@ public class MyRobot extends Agent {
         int middleIndex = (this.previous_values.length - 1) / 2;
         boolean isLocalMax = true;
 
-        int i;
-        for(i = 0; isLocalMax && i < middleIndex; ++i) {
+        int i = 0;
+
+        while (isLocalMax && i < middleIndex) {
             isLocalMax = this.previous_values[middleIndex] > this.previous_values[i];
+            i += 1;
         }
 
-        ++i;
+        i += 1;
 
         while(isLocalMax && i < this.previous_values.length) {
             isLocalMax = this.previous_values[middleIndex] > this.previous_values[i];
-            ++i;
+            i += 1;
         }
 
         return isLocalMax;
@@ -155,7 +160,7 @@ public class MyRobot extends Agent {
      * @param l Η ένδειξη του αριστερού αισθητήρα
      * @return true/false ανάλογα με το αν το ρομπότ ευθυγραμμίστηκε
      */
-    private boolean oriented(double c, double r, double l) {
+    private boolean isOriented(double c, double r, double l) {
         this.lightThreshold = c / 150.0;
 
         return Math.abs(l - r) < this.lightThreshold && c < l && c < r;
@@ -175,5 +180,25 @@ public class MyRobot extends Agent {
         }
 
         return min;
+    }
+
+    /**
+     * Ελέγχει την ορατότητα του ρομπότ στο μπροστινό του τμήμα. Αν το ρομπότ δεν εντοπίζει
+     * εμπόδια σε απόσταση εντός των 0.75 μέτρων χρησιμοποιώντας τους μπροστινούς αισθητήρες
+     * απόστασης (πρόκειται για το 25% το συνολικών αισθητήρων που διαθέτει), τότε θεωρούμε
+     * πως η περιοχή μπροστά του ρομπότ είναι 'καθαρή'.
+     */
+    private boolean frontAreaIsClear() {
+        double frontSonarsPercentage = 0.25;
+        int totalFrontSonars = (int) (this.num_of_sonars * frontSonarsPercentage);
+
+        for (int i = 0; i < totalFrontSonars; i++) {
+            int sonarIndex = (this.num_of_sonars -(totalFrontSonars / 2) + i) % this.num_of_sonars;
+            if (this.sonars.getMeasurement(sonarIndex) < 0.75) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -19,17 +19,15 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         EnvironmentDescription enviroment = new EnvironmentDescription();
-//        enviroment.add(new Box(new Vector3d(0.0, 0.0, 0.0), new Vector3f(4.0F, 1.0F, 1.0F), enviroment));
-//        enviroment.add(new Box(new Vector3d(2.0, 0.0, 0.0), new Vector3f(1.0F, 1.0F, 4.0F), enviroment));
-//        enviroment.add(new Box(new Vector3d(-2.0, 0.0, 0.0), new Vector3f(1.0F, 1.0F, 4.0F), enviroment));
 
         spheres(enviroment);
+        //bottle(enviroment);
 
         enviroment.light1IsOn = true;
-        enviroment.light1Position = new Vector3d(9.0, 2.0, 0.0);
+        enviroment.light1Position = new Vector3d(-1.0, 2.0, -8.0);
         enviroment.light2IsOn = false;
         enviroment.ambientLightColor = new Color3f(250.0F, 250.0F, 250.0F);
-        MyRobot rob = new MyRobot(new Vector3d(-9.0, 0.0, 0.0), "robot1");
+        MyRobot rob = new MyRobot(new Vector3d(0, 0.0, 8.0), "robot1");
         enviroment.add(rob);
         new Simbad(enviroment, false);
     }
@@ -40,7 +38,9 @@ public class Main {
         environment.add(new Box(new Vector3d(3.25, 0.0, 3.0), new Vector3f(0.5F, 1.0F, 3.0F), environment));
         environment.add(new Box(new Vector3d(-2.75, 0.0, 3.0), new Vector3f(0.5F, 1.0F, 4.0F), environment));
         environment.add(new Box(new Vector3d(-3.25, 0.0, 3.0), new Vector3f(0.5F, 1.0F, 3.0F), environment));
-        environment.add(new Box(new Vector3d(0.0, 0.0, -4.0), new Vector3f(2.0F, 1.0F, 2.0F), environment));
+        // environment.add(new Box(new Vector3d(0.0, 0.0, -4.0), new Vector3f(2.0F, 1.0F, 2.0F), environment));
+
+        environment.add(new Box(new Vector3d(0.0, 0.0, -2.5), new Vector3f(4.0F, 1.0F, 1.0F), environment));
     }
 
     static void box(EnvironmentDescription environment) {
