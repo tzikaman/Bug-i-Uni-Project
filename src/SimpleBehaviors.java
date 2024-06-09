@@ -11,9 +11,7 @@ public class SimpleBehaviors {
     static double K1 = 5.0;
     static double K2 = 0.8;
     static double K3 = 1.0;
-    static double MT = 2.0;
     static double SAFETY = 0.8;
-    static double lightThreshold = 1.0E-5;
 
     public SimpleBehaviors() {
     }

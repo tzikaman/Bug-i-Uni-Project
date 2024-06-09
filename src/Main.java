@@ -21,7 +21,6 @@ public class Main {
         EnvironmentDescription enviroment = new EnvironmentDescription();
 
         spheres(enviroment);
-        //bottle(enviroment);
 
         enviroment.light1IsOn = true;
         enviroment.light1Position = new Vector3d(-1.0, 2.0, -8.0);

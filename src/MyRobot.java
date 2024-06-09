@@ -9,13 +9,19 @@ import simbad.sim.LightSensor;
 import simbad.sim.RangeSensorBelt;
 import simbad.sim.RobotFactory;
 
+import java.util.Arrays;
+
 public class MyRobot extends Agent {
+    // Αισθητήρες φωτός
     public LightSensor ll = RobotFactory.addLightSensorLeft(this);
     public LightSensor lr = RobotFactory.addLightSensorRight(this);
     public LightSensor lc = RobotFactory.addLightSensor(this);
 
+    // Αισθητήρες απόστασης
     public RangeSensorBelt sonars;
 
+
+    // Μεταβλητές flags εκτέλεσης συμπεριφορών
     public boolean performStop;
     public boolean performFollow;
     public boolean performOrientation;
@@ -24,13 +30,24 @@ public class MyRobot extends Agent {
     private boolean CLOCKWISE = false;
 
     private int effectiveCounter = 0;
-    private boolean oriented = false;
+
+    // Κατώφλι για τον έλεγχο της ευθυγράμμισης του ρομπότ με τον στόχο
     public double lightThreshold;
+
+    // Ανώτατη τιμή που μπορεί να λάβει κάποιος αισθητήρας φωτός του ρομποτ (από παρατήρηση)
     private double maxLux = 0.077;
 
-
+    // Πλήθος διαθέσιμων αισθητήρων απόστασης
     private int num_of_sonars = 24;
-    private double[] previous_values = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    // Πλήθος αποθηκευμένων προηγούμενων τιμών του κεντρικού αισθητήρα φωτός
+    private int number_of_previous_values = 11;
+
+    // Οι προηγούμενες τιμές του κεντρικού αισθητήρα φωτός
+    private double[] previous_values = new double[this.number_of_previous_values];
+
+    // Μετρητής ο οποίος ελέγχει το γέμισμα του πίνακα previous_values με
+    // τις πιο πρόσφατες τιμές του κεντρικού αισθητήρα φωτός
     private int stepCounter = 0;
 
     public MyRobot(Vector3d position, String name) {
@@ -43,20 +60,30 @@ public class MyRobot extends Agent {
         this.performFollow = false;
         this.performOrientation = true;
         this.performForward = false;
+
+        // Αρχικοποίηση πίνακα previous_values με μηδενικά
+        this.reset_previous_values();
     }
 
     public void performBehavior() {
         double l = this.ll.getLux();
         double c = this.lc.getLux();
         double r = this.lr.getLux();
+
+        // Έλεγχος για το αν το ρομπότ έφτασε στον στόχο
         if (c >= this.maxLux) {
             this.performStop = true;
         }
 
+        // Εύρεση του αισθητήρα απόστασης με την μικρότερη ένδειξη από κάποιο εμπόδιο
         int min = this.getSonarWithMinimumMeasurement();
 
         if (!this.performFollow && !this.performOrientation) {
+            // Έλεγχος για το αν το ρομπότ βρίσκεται κοντά σε εμπόδιο
             if (this.sonars.getMeasurement(min) < 1.0) {
+
+                // Έλεγχος για το αν το ρομπότ έχει χώρο να κινηθεί προς τα μπρος, ακόμα και αν ανίχνευσε
+                // κάποιο εμπόδιο κοντά του
                 if (this.frontAreaIsClear() == false) {
                     this.performFollow = true;
                 }
@@ -64,15 +91,20 @@ public class MyRobot extends Agent {
         }
 
         if (this.performFollow) {
-            this.oriented = false;
             ++this.effectiveCounter;
             if (this.effectiveCounter > 30) {
                 if (this.stepCounter < this.previous_values.length) {
+                    // Ο πίνακας previous_values δεν έχει γεμίσει ακόμα. Εισήγαγε την τελευταία
+                    // τιμή του c
                     this.previous_values[this.stepCounter] = c;
                     ++this.stepCounter;
                 } else {
+                    // Απέρριψε την παλιότερη τιμή του c και εισήγαγε την πιο πρόσφατη
                     this.shift(c);
+
                     if (this.foundLocalMax()) {
+                        // Αν βρήκες τοπικό μέγιστο κατά την εκτέλεση της Follow, τότε σταμάτα
+                        // την Follow και ξεκίνα Orientation
                         this.performFollow = false;
                         this.performOrientation = true;
                         this.effectiveCounter = 0;
@@ -82,11 +114,10 @@ public class MyRobot extends Agent {
         }
 
         if (this.performOrientation && this.isOriented(c, r, l)) {
+            // Αν κατά τη διάρκεια της Orientation διαπίστωσες ότι το ρομπότ έχει ευθυγραμμιστεί
+            // με τον στόχο, τότε σταμάτα την Orientation και ξεκίνα την Forward
             this.performOrientation = false;
-            this.previous_values[0] = 0.0;
-            this.previous_values[1] = 0.0;
-            this.stepCounter = 0;
-            this.oriented = true;
+            this.reset_previous_values();
             this.performForward = true;
         }
 
@@ -200,5 +231,11 @@ public class MyRobot extends Agent {
         }
 
         return true;
+    }
+
+
+    private void reset_previous_values() {
+        Arrays.fill(this.previous_values, 0);
+        this.stepCounter = 0;
     }
 }
